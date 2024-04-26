@@ -16,8 +16,36 @@ impl Application {
 }
 
 #[derive(serde::Deserialize, Debug)]
+struct Database {
+    username: String,
+    password: String,
+    host: String,
+    port: u16,
+    database_name: String,
+}
+
+impl Database {
+    pub fn connection_string(&self) -> String {
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.database_name
+        )
+    }
+
+    /// Omitting the database name connects to the Postgres instance, not a specific logical database.
+    /// This is useful for operations that create or drop databases.
+    pub fn connection_string_without_db(&self) -> String {
+        format!(
+            "postgres://{}:{}@{}:{}",
+            self.username, self.password, self.host, self.port
+        )
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
 struct Config {
     pub application: Application,
+    pub database: Database,
 }
 
 fn get_config() -> Config {
