@@ -9,7 +9,17 @@ edition = "2021"
 axum = "0.7.4"
 config = "0.13.3"
 serde = { version = "1", features = ["derive"]}
+sqlx = { version = "0.7", default-features = false, features = [
+    "tls-native-tls",
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "json",
+] }
 
 [dev-dependencies]
 tokio = "1.28.2"
 reqwest = { version = "0.11", features = ["json"] }
+testcontainers = "0.15.0"
+testcontainers-modules = { version = "0.3.7", features = ["postgres"] }
