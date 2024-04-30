@@ -85,6 +85,12 @@ pub struct App {
     config: Config,
 }
 
+impl App {
+    pub fn address(&self) -> String {
+        self.config.application.address()
+    }
+}
+
 pub async fn spawn_app() -> App {
     let mut config = get_config();
 
