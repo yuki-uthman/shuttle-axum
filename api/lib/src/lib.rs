@@ -6,5 +6,5 @@ async fn health() -> impl IntoResponse {
 }
 
 pub fn build_router() -> Router {
-    Router::new().route("/", get(health))
+    Router::new().route("/health", get(health))
 }
