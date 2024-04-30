@@ -1,5 +1,8 @@
 use api_lib::build_router;
 use config::{Config as ConfigCrate, File};
+use sqlx::{PgPool, PgConnection, Connection, Executor};
+use testcontainers_modules::postgres::Postgres;
+use testcontainers_modules::testcontainers::clients::Cli;
 
 const CONFIG_FILE: &str = "dev.yaml";
 
@@ -44,8 +47,8 @@ impl Database {
 
 #[derive(serde::Deserialize, Debug)]
 struct Config {
-    pub application: Application,
-    pub database: Database,
+    application: Application,
+    database: Database,
 }
 
 fn get_config() -> Config {
@@ -59,8 +62,33 @@ fn get_config() -> Config {
     config.try_deserialize::<Config>().unwrap()
 }
 
-pub async fn spawn_app() {
-    let config = get_config();
+async fn start_database(config: &mut Config) {
+    let docker = Cli::default();
+    let node = docker.run(Postgres::default());
+
+    config.database.port = node.get_host_port_ipv4(5432);
+
+    // Create database
+    let mut connection = PgConnection::connect(&config.database.connection_string_without_db())
+        .await
+        .expect("Failed to connect to Postgres");
+    connection
+        .execute(&*format!(
+            r#"CREATE DATABASE "{}";"#,
+            config.database.database_name
+        ))
+        .await
+        .expect("Failed to create database.");
+}
+
+pub struct App {
+    config: Config,
+}
+
+pub async fn spawn_app() -> App {
+    let mut config = get_config();
+
+    start_database(&mut config).await;
 
     let app = build_router();
 
@@ -71,4 +99,6 @@ pub async fn spawn_app() {
     tokio::spawn(async {
         axum::serve(listener, app).await.unwrap();
     });
+
+    App { config }
 }
