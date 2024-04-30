@@ -62,7 +62,7 @@ fn get_config() -> Config {
     config.try_deserialize::<Config>().unwrap()
 }
 
-async fn start_database(config: &mut Config) {
+async fn start_database(config: &mut Config) -> PgPool {
     let docker = Cli::default();
     let node = docker.run(Postgres::default());
 
@@ -79,6 +79,11 @@ async fn start_database(config: &mut Config) {
         ))
         .await
         .expect("Failed to create database.");
+
+    let connection_string = config.database.connection_string();
+    PgPool::connect(&connection_string)
+        .await
+        .expect("Failed to connect to Postgres")
 }
 
 pub struct App {
@@ -94,9 +99,9 @@ impl App {
 pub async fn spawn_app() -> App {
     let mut config = get_config();
 
-    start_database(&mut config).await;
+    let pool = start_database(&mut config).await;
 
-    let app = build_router();
+    let app = build_router(pool);
 
     let listener = tokio::net::TcpListener::bind(config.application.address())
         .await
