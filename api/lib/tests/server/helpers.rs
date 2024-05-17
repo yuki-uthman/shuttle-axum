@@ -1,8 +1,6 @@
 use api_lib::build_router;
 use config::{Config as ConfigCrate, File};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
-use testcontainers_modules::postgres::Postgres;
-use testcontainers_modules::testcontainers::clients::Cli;
 
 const CONFIG_FILE: &str = "dev.yaml";
 
@@ -63,10 +61,7 @@ fn get_config() -> Config {
 }
 
 async fn start_database(config: &mut Config) -> PgPool {
-    let docker = Cli::default();
-    let node = docker.run(Postgres::default());
-
-    config.database.port = node.get_host_port_ipv4(5432);
+    config.database.database_name = uuid::Uuid::new_v4().to_string();
 
     // Create database
     let mut connection = PgConnection::connect(&config.database.connection_string_without_db())
