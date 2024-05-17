@@ -1,6 +1,6 @@
 use api_lib::build_router;
 use config::{Config as ConfigCrate, File};
-use sqlx::{PgPool, PgConnection, Connection, Executor};
+use sqlx::{Connection, Executor, PgConnection, PgPool};
 use testcontainers_modules::postgres::Postgres;
 use testcontainers_modules::testcontainers::clients::Cli;
 
@@ -81,9 +81,15 @@ async fn start_database(config: &mut Config) -> PgPool {
         .expect("Failed to create database.");
 
     let connection_string = config.database.connection_string();
-    PgPool::connect(&connection_string)
+    let pool = PgPool::connect(&connection_string)
         .await
-        .expect("Failed to connect to Postgres")
+        .expect("Failed to connect to Postgres");
+    sqlx::migrate!("../../migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to run migrations");
+
+    pool
 }
 
 pub struct App {
@@ -98,6 +104,7 @@ impl App {
 
 pub async fn spawn_app() -> App {
     let mut config = get_config();
+    config.application.port = 0;
 
     let pool = start_database(&mut config).await;
 
@@ -106,6 +113,7 @@ pub async fn spawn_app() -> App {
     let listener = tokio::net::TcpListener::bind(config.application.address())
         .await
         .unwrap();
+    config.application.port = listener.local_addr().unwrap().port();
 
     tokio::spawn(async {
         axum::serve(listener, app).await.unwrap();
