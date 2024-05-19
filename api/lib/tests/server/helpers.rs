@@ -1,4 +1,5 @@
 use api_lib::build_router;
+use api_lib::Result;
 use config::{Config as ConfigCrate, File};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
@@ -49,7 +50,7 @@ struct Config {
     database: Database,
 }
 
-fn get_config() -> Config {
+fn get_config() -> Result<Config> {
     let base_dir = std::env::current_dir().unwrap();
     let config_path = base_dir.join(CONFIG_FILE);
     let config = ConfigCrate::builder()
@@ -57,7 +58,9 @@ fn get_config() -> Config {
         .build()
         .unwrap();
 
-    config.try_deserialize::<Config>().unwrap()
+    Ok(config
+        .try_deserialize::<Config>()
+        .map_err(|_| "Failed to parse config")?)
 }
 
 async fn start_database(config: &mut Config) -> PgPool {
@@ -97,8 +100,8 @@ impl App {
     }
 }
 
-pub async fn spawn_app() -> App {
-    let mut config = get_config();
+pub async fn spawn_app() -> Result<App> {
+    let mut config = get_config()?;
     config.application.port = 0;
 
     let pool = start_database(&mut config).await;
@@ -114,5 +117,5 @@ pub async fn spawn_app() -> App {
         axum::serve(listener, app).await.unwrap();
     });
 
-    App { config }
+    Ok(App { config })
 }
