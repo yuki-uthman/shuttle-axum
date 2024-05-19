@@ -1,6 +1,10 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::get, Router};
 use sqlx::PgPool;
 
+mod error;
+
+pub use error::{Error, Result};
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
@@ -10,8 +14,10 @@ async fn health() -> impl IntoResponse {
     StatusCode::OK.into_response()
 }
 
-async fn version(State(state): State<AppState>) -> Result<impl IntoResponse, impl IntoResponse> {
-    let result: Result<String, sqlx::Error> = sqlx::query_scalar("SELECT version()")
+async fn version(
+    State(state): State<AppState>,
+) -> std::result::Result<impl IntoResponse, impl IntoResponse> {
+    let result: std::result::Result<String, sqlx::Error> = sqlx::query_scalar("SELECT version()")
         .fetch_one(&state.pool)
         .await;
 
