@@ -15,3 +15,19 @@ async fn health() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn database() -> Result<()> {
+    let app = spawn_app().await?;
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(format!("http://{}/database", app.address()))
+        .send()
+        .await
+        .unwrap();
+
+    assert!(response.status().is_success());
+
+    Ok(())
+}
