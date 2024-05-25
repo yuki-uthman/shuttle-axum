@@ -27,7 +27,13 @@ async fn database() -> Result<()> {
         .await
         .unwrap();
 
-    assert!(response.status().is_success());
+    assert_eq!(response.status(), 200);
+
+    let text = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to get response text: {}", e))?;
+    assert_eq!(text, "1");
 
     Ok(())
 }
