@@ -63,7 +63,27 @@ fn get_config() -> Result<Config> {
         .map_err(|_| "Failed to parse config")?)
 }
 
-async fn start_database(config: &mut Config) -> PgPool {
+async fn check_database(config: &Config) -> Result<()> {
+    let mut connection = PgConnection::connect(&config.database.connection_string())
+        .await
+        .map_err(|_| "Failed to connect to Postgres")?;
+    let query = sqlx::query("SELECT 1")
+        .execute(&mut connection)
+        .await
+        .map_err(|_| "Failed to execute query")?;
+
+    if query.rows_affected() != 1 {
+        return Err("Query did not return the expected result".into());
+    }
+
+    Ok(())
+}
+
+async fn start_database(config: &mut Config) -> Result<PgPool> {
+    check_database(config)
+        .await
+        .map_err(|_| "Database not ready")?;
+
     config.database.database_name = uuid::Uuid::new_v4().to_string();
 
     // Create database
@@ -87,7 +107,7 @@ async fn start_database(config: &mut Config) -> PgPool {
         .await
         .expect("Failed to run migrations");
 
-    pool
+    Ok(pool)
 }
 
 fn load_secret() -> Result<()> {
@@ -110,7 +130,9 @@ pub async fn spawn_app() -> Result<App> {
     let mut config = get_config()?;
     config.application.port = 0;
 
-    let pool = start_database(&mut config).await;
+    let pool = start_database(&mut config)
+        .await
+        .map_err(|_| "Failed to start database")?;
 
     load_secret()?;
 
