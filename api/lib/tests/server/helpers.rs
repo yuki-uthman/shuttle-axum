@@ -1,7 +1,8 @@
 use api_lib::build_router;
-use api_lib::Result;
 use config::{Config as ConfigCrate, File};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+
+use crate::error::Result;
 
 const CONFIG_FILE: &str = "dev.yaml";
 

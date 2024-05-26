@@ -1,5 +1,5 @@
 use crate::helpers::spawn_app;
-use api_lib::Result;
+use crate::error::Result;
 
 #[tokio::test]
 async fn health() -> Result<()> {
