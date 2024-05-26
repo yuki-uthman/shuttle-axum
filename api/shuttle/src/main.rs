@@ -9,8 +9,9 @@ async fn main(
 ) -> shuttle_axum::ShuttleAxum {
     // Secrets.toml
     // SECRET_KEY = 'this is a secret key'
-    let secret = secrets.get("SECRET_KEY").expect("SECRET_KEY must be set");
-    println!("Secret: {}", secret);
+    for secret in secrets.into_iter() {
+        std::env::set_var(secret.0, secret.1);
+    }
 
     sqlx::migrate!("../../migrations")
         .run(&pool)
