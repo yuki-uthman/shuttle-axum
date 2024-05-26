@@ -129,7 +129,6 @@ impl App {
 
 pub async fn spawn_app() -> Result<App> {
     let mut config = get_config()?;
-    config.application.port = 0;
 
     let pool = start_database(&mut config)
         .await
