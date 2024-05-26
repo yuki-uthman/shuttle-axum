@@ -1,4 +1,4 @@
-use api_lib::build_router;
+use api::build_router;
 use config::{Config as ConfigCrate, File};
 use sqlx::{Connection, PgConnection, PgPool, Row};
 

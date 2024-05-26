@@ -1,4 +1,4 @@
-use api_lib::build_router;
+use api::build_router;
 use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
 

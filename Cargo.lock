@@ -78,7 +78,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
 
 [[package]]
-name = "api-lib"
+name = "api"
 version = "0.1.0"
 dependencies = [
  "axum 0.7.5",
@@ -670,7 +670,7 @@ checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
 name = "films-axum"
 version = "0.1.0"
 dependencies = [
- "api-lib",
+ "api",
  "axum 0.7.5",
  "shuttle-axum",
  "shuttle-runtime",
