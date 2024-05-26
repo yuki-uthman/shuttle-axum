@@ -119,7 +119,7 @@ async fn migrate_database(config: &Config) -> Result<()> {
     Ok(())
 }
 
-async fn start_database(config: &Config) -> Result<()> {
+async fn setup_database(config: &Config) -> Result<()> {
     check_database(config).await?;
 
     create_database(config).await?;
@@ -135,12 +135,12 @@ fn load_secret() -> Result<()> {
     Ok(())
 }
 
-async fn run_app(config: &Config) -> Result<u16> {
+async fn start_app(config: &Config) -> Result<u16> {
     let pool = PgPool::connect(&config.database.connection_string())
         .await
         .map_err(|_| "Failed to connect to Postgres")?;
 
-    let app = build_router(pool);
+    let router = build_router(pool);
 
     let listener = tokio::net::TcpListener::bind(config.application.address())
         .await
@@ -149,7 +149,7 @@ async fn run_app(config: &Config) -> Result<u16> {
     let port = listener.local_addr().unwrap().port();
 
     tokio::spawn(async {
-        axum::serve(listener, app).await.unwrap();
+        axum::serve(listener, router).await.unwrap();
     });
 
 
@@ -166,15 +166,15 @@ impl App {
     }
 }
 
-pub async fn spawn_app() -> Result<App> {
+pub async fn setup_app() -> Result<App> {
     let mut config = get_config()?;
 
     config.database.database_name = uuid::Uuid::new_v4().to_string();
-    start_database(&config).await?;
+    setup_database(&config).await?;
 
     load_secret()?;
 
-    let port = run_app(&config).await?;
+    let port = start_app(&config).await?;
 
     config.application.port = port;
 

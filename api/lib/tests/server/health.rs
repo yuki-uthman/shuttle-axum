@@ -1,9 +1,9 @@
-use crate::helpers::spawn_app;
+use crate::helpers::setup_app;
 use crate::error::Result;
 
 #[tokio::test]
 async fn health() -> Result<()> {
-    let app = spawn_app().await?;
+    let app = setup_app().await?;
 
     let client = reqwest::Client::new();
     let response = client
@@ -18,7 +18,7 @@ async fn health() -> Result<()> {
 
 #[tokio::test]
 async fn database() -> Result<()> {
-    let app = spawn_app().await?;
+    let app = setup_app().await?;
 
     let client = reqwest::Client::new();
     let response = client
@@ -40,7 +40,7 @@ async fn database() -> Result<()> {
 
 #[tokio::test]
 async fn secrets() -> Result<()> {
-    let app = spawn_app().await?;
+    let app = setup_app().await?;
 
     let client = reqwest::Client::new();
     let response = client
