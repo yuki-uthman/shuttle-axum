@@ -84,6 +84,7 @@ dependencies = [
  "axum 0.7.5",
  "config",
  "derive_more",
+ "dotenvy",
  "reqwest",
  "serde",
  "sqlx",
