@@ -1,6 +1,6 @@
 use api_lib::build_router;
 use config::{Config as ConfigCrate, File};
-use sqlx::{Connection, Executor, PgConnection, PgPool};
+use sqlx::{Connection, PgConnection, PgPool, Row};
 
 use crate::error::Result;
 
@@ -65,56 +65,95 @@ fn get_config() -> Result<Config> {
 }
 
 async fn check_database(config: &Config) -> Result<()> {
-    let mut connection = PgConnection::connect(&config.database.connection_string())
+    let mut connection = PgConnection::connect(&config.database.connection_string_without_db())
         .await
         .map_err(|_| "Failed to connect to Postgres")?;
-    let query = sqlx::query("SELECT 1")
-        .execute(&mut connection)
-        .await
-        .map_err(|_| "Failed to execute query")?;
 
-    if query.rows_affected() != 1 {
-        return Err("Query did not return the expected result".into());
+    let select_query = "SELECT 1";
+
+    let row = sqlx::query(select_query)
+        .fetch_one(&mut connection)
+        .await
+        .map_err(|_| format!("Failed to execute query: {}", select_query))?;
+
+    let value: i32 = row
+        .try_get(0)
+        .map_err(|_| "Failed to retrieve query result")?;
+
+    if value != 1 {
+        return Err(format!(
+            "Query did not return the expected result: {} -> {}",
+            select_query, value
+        )
+        .into());
     }
 
     Ok(())
 }
 
-async fn start_database(config: &mut Config) -> Result<PgPool> {
-    check_database(config)
-        .await
-        .map_err(|_| "Database not ready")?;
-
-    config.database.database_name = uuid::Uuid::new_v4().to_string();
-
-    // Create database
+async fn create_database(config: &Config) -> Result<()> {
     let mut connection = PgConnection::connect(&config.database.connection_string_without_db())
         .await
-        .expect("Failed to connect to Postgres");
-    connection
-        .execute(&*format!(
-            r#"CREATE DATABASE "{}";"#,
-            config.database.database_name
-        ))
-        .await
-        .expect("Failed to create database.");
+        .map_err(|_| "Failed to connect to Postgres")?;
 
-    let connection_string = config.database.connection_string();
-    let pool = PgPool::connect(&connection_string)
+    let query_string = format!(r#"CREATE DATABASE "{}";"#, config.database.database_name);
+
+    sqlx::query(&query_string)
+        .execute(&mut connection)
         .await
-        .expect("Failed to connect to Postgres");
+        .map_err(|_| format!("Failed to execute query: {}", query_string))?;
+
+    Ok(())
+}
+
+async fn migrate_database(config: &Config) -> Result<()> {
+    let mut connection = PgConnection::connect(&config.database.connection_string())
+        .await
+        .map_err(|_| "Failed to connect to Postgres")?;
+
     sqlx::migrate!("../../migrations")
-        .run(&pool)
+        .run(&mut connection)
         .await
-        .expect("Failed to run migrations");
+        .map_err(|_| "Failed to run migrations")?;
 
-    Ok(pool)
+    Ok(())
+}
+
+async fn start_database(config: &Config) -> Result<()> {
+    check_database(config).await?;
+
+    create_database(config).await?;
+
+    migrate_database(config).await?;
+
+    Ok(())
 }
 
 fn load_secret() -> Result<()> {
-    dotenvy::from_path("../../Secrets.toml").unwrap();
+    dotenvy::from_path("../../Secrets.toml").map_err(|_| "Failed to load Secrets.toml")?;
 
     Ok(())
+}
+
+async fn run_app(config: &Config) -> Result<u16> {
+    let pool = PgPool::connect(&config.database.connection_string())
+        .await
+        .map_err(|_| "Failed to connect to Postgres")?;
+
+    let app = build_router(pool);
+
+    let listener = tokio::net::TcpListener::bind(config.application.address())
+        .await
+        .unwrap();
+
+    let port = listener.local_addr().unwrap().port();
+
+    tokio::spawn(async {
+        axum::serve(listener, app).await.unwrap();
+    });
+
+
+    Ok(port)
 }
 
 pub struct App {
@@ -130,22 +169,15 @@ impl App {
 pub async fn spawn_app() -> Result<App> {
     let mut config = get_config()?;
 
-    let pool = start_database(&mut config)
-        .await
-        .map_err(|_| "Failed to start database")?;
+    config.database.database_name = uuid::Uuid::new_v4().to_string();
+    start_database(&config).await?;
 
     load_secret()?;
 
-    let app = build_router(pool);
+    let port = run_app(&config).await?;
 
-    let listener = tokio::net::TcpListener::bind(config.application.address())
-        .await
-        .unwrap();
-    config.application.port = listener.local_addr().unwrap().port();
+    config.application.port = port;
 
-    tokio::spawn(async {
-        axum::serve(listener, app).await.unwrap();
-    });
 
     Ok(App { config })
 }
