@@ -37,3 +37,25 @@ async fn database() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn secrets() -> Result<()> {
+    let app = spawn_app().await?;
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(format!("http://{}/secrets", app.address()))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+
+    let text = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to get response text: {}", e))?;
+    assert_eq!(text, "secret value");
+
+    Ok(())
+}

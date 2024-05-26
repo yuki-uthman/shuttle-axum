@@ -90,6 +90,12 @@ async fn start_database(config: &mut Config) -> PgPool {
     pool
 }
 
+fn load_secret() -> Result<()> {
+    dotenvy::from_path("../../Secrets.toml").unwrap();
+
+    Ok(())
+}
+
 pub struct App {
     config: Config,
 }
@@ -105,6 +111,8 @@ pub async fn spawn_app() -> Result<App> {
     config.application.port = 0;
 
     let pool = start_database(&mut config).await;
+
+    load_secret()?;
 
     let app = build_router(pool);
 
