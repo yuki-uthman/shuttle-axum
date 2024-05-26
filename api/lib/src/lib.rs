@@ -27,10 +27,17 @@ async fn database(
     }
 }
 
+async fn secrets() -> impl IntoResponse {
+    let secret_key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set");
+
+    (StatusCode::OK, secret_key)
+}
+
 pub fn build_router(pool: PgPool) -> Router {
     let state = AppState { pool };
     Router::new()
         .route("/health", get(health))
         .route("/database", get(database))
+        .route("/secrets", get(secrets))
         .with_state(state)
 }
