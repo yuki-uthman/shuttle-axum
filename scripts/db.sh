@@ -23,8 +23,8 @@ fi
 DB_USER=${POSTGRES_USER:=postgres}
 # Check if a custom password has been set, otherwise default to 'password'
 DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
-# Check if a custom password has been set, otherwise default to 'shuttle-films'
-DB_NAME="${POSTGRES_DB:=shuttle-films}"
+# Check if a custom password has been set, otherwise default to '{{project_name}}'
+DB_NAME="${POSTGRES_DB:={{project_name}}}"
 # Check if a custom port has been set, otherwise default to '5432'
 DB_PORT="${POSTGRES_PORT:=5432}"
 
