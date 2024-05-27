@@ -667,19 +667,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
 
 [[package]]
-name = "films-axum"
-version = "0.1.0"
-dependencies = [
- "api",
- "axum 0.7.5",
- "shuttle-axum",
- "shuttle-runtime",
- "shuttle-shared-db",
- "sqlx",
- "tokio",
-]
-
-[[package]]
 name = "finl_unicode"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2228,6 +2215,19 @@ checksum = "cd98da5e07e2f265cc9a673a8273d32e126242dcb886cd0529bcf59b8c023799"
 dependencies = [
  "axum 0.7.5",
  "shuttle-runtime",
+]
+
+[[package]]
+name = "shuttle-axum-template"
+version = "0.1.0"
+dependencies = [
+ "api",
+ "axum 0.7.5",
+ "shuttle-axum",
+ "shuttle-runtime",
+ "shuttle-shared-db",
+ "sqlx",
+ "tokio",
 ]
 
 [[package]]
