@@ -130,7 +130,7 @@ async fn setup_database(config: &Config) -> Result<()> {
 }
 
 fn load_secret() -> Result<()> {
-    dotenvy::from_path("../../Secrets.toml").map_err(|_| "Failed to load Secrets.toml")?;
+    dotenvy::from_path("../../Secrets.toml").map_err(|_| "Failed to load Secrets.toml. Did you forget to change Secrets.toml.example to Secrets.toml?")?;
 
     Ok(())
 }
